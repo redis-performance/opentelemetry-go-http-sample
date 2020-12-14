@@ -1,0 +1,24 @@
+version: '3'
+services:
+  redis:
+    image: redis:6.0.5
+    ports:
+      - 6379:6379/tcp
+
+  server:
+    build: .
+    depends_on:
+      - redis
+      - jaeger
+    ports:
+      - 7777:7777
+    environment:
+      REDISENDPOINT: redis:6379
+      JAEGERAGENTENDPOINT: http://jaeger:14268
+    command: ['./opentelemetry-go-http-sample']
+
+  jaeger:
+    image: jaegertracing/opentelemetry-all-in-one
+    ports:
+      - 14268:14268
+      - 16686:16686
