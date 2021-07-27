@@ -18,7 +18,6 @@ func (server *server) routes() {
 
 func getIdFromRequest(req *http.Request) (id int, err error) {
 	vars := mux.Vars(req)
-	fmt.Println(vars["id"])
 	if vars["id"] != "" {
 		id, _ = strconv.Atoi(vars["id"])
 	} else {
@@ -45,18 +44,10 @@ func (server *server) handleAuthorPostOrPut() http.HandlerFunc {
 			return
 		}
 		ctx := req.Context()
-		nonNullValues := authorToHsetCmdArgs(author)
-		_, err = server.client.HSet(ctx, getRedisAuthorKey(authorId), nonNullValues...).Result()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		err, replyAuthor, done := server.persistToStorageLayer(w, author, err, ctx, authorId)
+		if done {
 			return
 		}
-		redisReply, err := server.client.HGetAll(ctx, getRedisAuthorKey(authorId)).Result()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		replyAuthor, _ := UpdateAuthorFromRedisReply(author, redisReply)
 		encodedAuthor, err := json.Marshal(replyAuthor)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -74,12 +65,16 @@ func (server *server) handleAuthorGet() http.HandlerFunc {
 			return
 		}
 		ctx := req.Context()
-		redisReply, err := server.client.HGetAll(ctx, getRedisAuthorKey(authorId)).Result()
+		found, storageReplyMap := server.retrieveFromStorageLayer(err, ctx, authorId)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		replyAuthor, _ := UpdateAuthorFromRedisReply(Author{}, redisReply)
+		if !found {
+			http.Error(w, fmt.Sprintf("The resource Author with id %d does not exist", authorId), http.StatusNotFound)
+			return
+		}
+		replyAuthor, _ := UpdateAuthorFromMapState(Author{}, storageReplyMap)
 		encodedAuthor, err := json.Marshal(replyAuthor)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)

@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // The Author struct represents the data in the JSON/JSONB column.
 // We can use struct tags to control how each field is encoded.
 type Author struct {
@@ -10,7 +8,7 @@ type Author struct {
 	About    string `json:"About"`
 }
 
-func authorToHsetCmdArgs(author Author) []interface{} {
+func authorToKeyValueMap(author Author) []interface{} {
 	nonNullValues := make([]interface{}, 0)
 	if author.Name != "" {
 		nonNullValues = append(nonNullValues, "Name", author.Name)
@@ -24,11 +22,7 @@ func authorToHsetCmdArgs(author Author) []interface{} {
 	return nonNullValues
 }
 
-func getRedisAuthorKey(authorId int) string {
-	return fmt.Sprintf("author:%d", authorId)
-}
-
-func UpdateAuthorFromRedisReply(author Author, redisReply map[string]string) (updatedAuthor Author, err error) {
+func UpdateAuthorFromMapState(author Author, redisReply map[string]string) (updatedAuthor Author, err error) {
 	updatedAuthor = author
 	if name, ok := redisReply["Name"]; ok {
 		updatedAuthor.Name = name

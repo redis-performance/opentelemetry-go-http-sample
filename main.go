@@ -28,7 +28,10 @@ type server struct {
 
 func initTracer(serviceName string, jaegerAgentEndpoint string) {
 
-	// Create and install Jaeger export pipeline
+	// Spans are created by tracers, which can be acquired from a Tracer Provider.
+	// In our example we will use Jaeger as our trace provider
+	// To do so, we will follow Jaeger godoc and leverage the NewExportPipeline() method
+	// that sets up a complete export pipeline with the recommended setup for trace provider
 	tp, _, err := jaeger.NewExportPipeline(
 		jaeger.WithCollectorEndpoint(fmt.Sprintf("%s/api/traces", jaegerAgentEndpoint)),
 		jaeger.WithProcess(jaeger.Process{
@@ -49,6 +52,7 @@ func initTracer(serviceName string, jaegerAgentEndpoint string) {
 	// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracerprovider
 	otel.SetTracerProvider(tp)
 
+	// Traces can extend beyond a single process. This requires context propagation, a mechanism where identifiers for a trace are sent to remote processes.
 	// TextMapPropagator performs the injection and extraction of a cross-cutting concern value as string key/values
 	// pairs into carriers that travel in-band across process boundaries.
 	// The carrier of propagated data on both the client (injector) and server (extractor) side is usually an HTTP request.
