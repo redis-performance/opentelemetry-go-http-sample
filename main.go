@@ -39,10 +39,23 @@ func initTracer(serviceName string, jaegerAgentEndpoint string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	// Tracers can be accessed with a TracerProvider.
+	// In implementations of the API, the TracerProvider is expected to be the stateful
+	// object that holds any configuration.
+	// Normally, the TracerProvider is expected to be accessed from a central place.
+	// Thus, the API SHOULD provide a way to set/register and access a global default TracerProvider.
+	//
+	// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#tracerprovider
 	otel.SetTracerProvider(tp)
+
+	// TextMapPropagator performs the injection and extraction of a cross-cutting concern value as string key/values
+	// pairs into carriers that travel in-band across process boundaries.
+	// The carrier of propagated data on both the client (injector) and server (extractor) side is usually an HTTP request.
+	// In order to increase compatibility, the key/value pairs MUST only consist of US-ASCII characters that make up
+	// valid HTTP header fields as per RFC 7230.
+	//
+	// See: https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/context/api-propagators.md#textmap-propagator
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(propagation.TraceContext{}, propagation.Baggage{}))
 }
 

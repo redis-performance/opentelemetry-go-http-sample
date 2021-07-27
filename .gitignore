@@ -18,3 +18,5 @@
 
 .idea
 bin/
+
+coverage.txt
